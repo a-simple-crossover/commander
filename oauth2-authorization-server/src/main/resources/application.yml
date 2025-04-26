@@ -3,4 +3,4 @@ spring:
     name: authorization-server
 
 server:
-  port: 9999
+  port: 80
