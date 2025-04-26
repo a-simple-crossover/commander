@@ -20,7 +20,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import java.util.UUID;
 
 /**
+ * 默认请求地址配置
  * @see org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings
+ *
+ * 默认授权请求参数
+ * @see org.springframework.security.oauth2.server.authorization.web.OAuth2AuthorizationEndpointFilter
+ * @see org.springframework.security.oauth2.server.authorization.web.authentication.OAuth2AuthorizationCodeRequestAuthenticationConverter
  */
 @Configuration
 public class AuthorizationServerConfig {
@@ -30,10 +35,11 @@ public class AuthorizationServerConfig {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http
+                .authorizeHttpRequests((requests) -> requests.anyRequest().permitAll())
                 .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
                 .with(authorizationServerConfigurer, (authorizationServer) ->
                                 authorizationServer
-                                        .registeredClientRepository(new InMemoryRegisteredClientRepository())
+                                        .registeredClientRepository(repository())
                                         .authorizationService(authorizationService())
                                         .authorizationConsentService(authorizationConsentService())
 //                                .authorizationServerSettings(authorizationServerSettings)
@@ -61,9 +67,10 @@ public class AuthorizationServerConfig {
     private RegisteredClientRepository repository() {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .clientId("client-id")
-                .clientSecret("{noop}client-secret")
+                .clientId("client1")
+                .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .redirectUri("localhost/test")
                 .build();
         return new InMemoryRegisteredClientRepository(registeredClient);
     }
