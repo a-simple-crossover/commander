@@ -1,12 +1,11 @@
 spring:
   application:
-    name: authorization-server
-
+    name: security
 
 server:
   port: 80
 
 logging:
   level:
-    org.springframework: trace
+    org.springframework.security: trace
 
