@@ -3,10 +3,18 @@ package com.master.oauth2.authorization.server.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
@@ -29,6 +37,8 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.util.UUID;
 
@@ -39,22 +49,31 @@ import java.util.UUID;
  * @see org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings
  * <p>
  * 默认授权请求参数
+ * @see org.springframework.security.web.context.SecurityContextHolderFilter
  * @see org.springframework.security.oauth2.server.authorization.web.OAuth2AuthorizationEndpointFilter
  * @see org.springframework.security.oauth2.server.authorization.web.authentication.OAuth2AuthorizationCodeRequestAuthenticationConverter
  * @see AnonymousAuthenticationFilter
  * @see UsernamePasswordAuthenticationFilter
  * @see OAuth2AuthorizationServerMetadataEndpointFilter
+ *
+ * @author zhangbo
  */
 @Configuration
 public class AuthorizationServerConfig {
 
 
     @Bean
-    @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 OAuth2AuthorizationServerConfigurer.authorizationServer();
         http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers("/login", "/logout/success").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .securityContext(context -> context.securityContextRepository(securityContextRepository()))
+                .logout(logout -> logout.logoutSuccessUrl("/logout/success"))
 
                 .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
                 .with(authorizationServerConfigurer, (authorizationServer) ->
@@ -62,33 +81,50 @@ public class AuthorizationServerConfig {
                                         .registeredClientRepository(repository())
                                         .authorizationService(authorizationService())
                                         .authorizationConsentService(authorizationConsentService())
-//                                .authorizationServerSettings(authorizationServerSettings)
                                         .tokenGenerator(tokenGenerator())
                 )
-                .authorizeHttpRequests((authorize) -> authorize
-                        .anyRequest().authenticated()
-                )
+
+
 
         ;
         return http.build();
     }
 
     @Bean
-    @Order(2)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
-            throws Exception {
-        http
-                .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/test", "/doLogin").permitAll()
-                        .anyRequest().authenticated()
-                )
-                // Form login handles the redirect to the login page from the
-                // authorization server filter chain
-                .formLogin(login -> login.loginPage("/test"));
-        return http.build();
-
-
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
     }
+
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails userDetails = User.builder()
+                .username("user")
+                .password("{noop}password")
+                .roles("USER")
+                .build();
+        return new InMemoryUserDetailsManager(userDetails);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+
+    private AuthenticationProvider daoAuthenticationProvider(){
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService());
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
+        return authenticationProvider;
+    }
+
 
     private OAuth2AuthorizationConsentService authorizationConsentService() {
         return new InMemoryOAuth2AuthorizationConsentService();
@@ -111,23 +147,15 @@ public class AuthorizationServerConfig {
                 .clientId("client1")
                 .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .redirectUri("http://localhost/test")
+                .redirectUri("http://find/code")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(true)
                         .build())
+                .scope("read")
+                .scope("update")
                 .build();
         return new InMemoryRegisteredClientRepository(registeredClient);
     }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails userDetails = User.builder()
-                .username("u")
-                .password("{noop}1")
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(userDetails);
-    }
 
 }

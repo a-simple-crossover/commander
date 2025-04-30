@@ -8,5 +8,5 @@ server:
 
 logging:
   level:
-    org.springframework: trace
+    org.springframework.security: trace
 
