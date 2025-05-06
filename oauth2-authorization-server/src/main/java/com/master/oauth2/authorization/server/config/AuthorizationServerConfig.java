@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
@@ -55,6 +56,7 @@ import java.util.UUID;
  * @see AnonymousAuthenticationFilter
  * @see UsernamePasswordAuthenticationFilter
  * @see OAuth2AuthorizationServerMetadataEndpointFilter
+ * @see org.springframework.security.oauth2.server.authorization.web.OAuth2TokenEndpointFilter
  *
  * @author zhangbo
  */
@@ -82,6 +84,7 @@ public class AuthorizationServerConfig {
                                         .authorizationService(authorizationService())
                                         .authorizationConsentService(authorizationConsentService())
                                         .tokenGenerator(tokenGenerator())
+
                 )
 
 
@@ -118,12 +121,6 @@ public class AuthorizationServerConfig {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-    private AuthenticationProvider daoAuthenticationProvider(){
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService());
-        authenticationProvider.setPasswordEncoder(passwordEncoder());
-        return authenticationProvider;
-    }
 
 
     private OAuth2AuthorizationConsentService authorizationConsentService() {
@@ -144,10 +141,11 @@ public class AuthorizationServerConfig {
     private RegisteredClientRepository repository() {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .clientId("client1")
                 .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .redirectUri("http://find/code")
+                .redirectUri("http://localhost/test")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(true)
                         .build())
