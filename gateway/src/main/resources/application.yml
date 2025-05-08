@@ -1,0 +1,20 @@
+server:
+  port: 8080  # 资源服务器端口
+
+spring:
+  application:
+    name: gateway-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:80  # 授权服务器地址
+          jwk-set-uri: http://localhost:80/oauth2/jwks  # JWT公钥获取地址
+          jws-algorithms: RS256  # 明确指定使用RS256算法
+
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security.oauth2: TRACE  # 添加更详细的OAuth2日志
