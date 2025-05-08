@@ -17,6 +17,8 @@
     <modules>
         <module>oauth2-authorization-server</module>
         <module>security</module>
+        <module>gateway</module>
+        <module>modules</module>
     </modules>
     <scm>
         <connection/>
