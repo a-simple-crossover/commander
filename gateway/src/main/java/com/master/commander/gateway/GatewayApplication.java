@@ -23,9 +23,9 @@ public class GatewayApplication {
         return "need";
     }
 
-    @GetMapping("/no-need")
+    @GetMapping("/needY")
     public String noNeed() {
-        return "no-need";
+        return "needY";
     }
 
 }

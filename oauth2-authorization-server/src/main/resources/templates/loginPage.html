@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>登陆</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .login-container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-container h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+
+    .login-container input[type="text"],
+    .login-container input[type="password"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    .login-container button {
+      display: block;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      margin: 0 auto;
+      background: none;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .login-container button::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: #ae00ff;
+      border-radius: 5px;
+      transform: translateX(-50%) scaleX(1);
+      transform-origin: center;
+      transition: transform 1s ease;
+      z-index: 0;
+    }
+
+    .login-container button:hover::before {
+      transform: translateX(-50%) scaleX(0.9);
+    }
+
+    .login-container button span {
+      position: relative;
+      z-index: 1;
+      display: inline-block;
+      color: #fff;
+      padding: 0.75rem 1rem;
+    }
+
+    .login-container button:hover span {
+      /* 可选: 悬浮时文字色变化 */
+    }
+
+
+
+
+    .login-container .footer {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        margin: 0 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-container">
+  <h2>指挥官</h2>
+  <form action="/login" method="post">
+    <input type="text" name="username" placeholder="用户名" required />
+    <input type="password" name="password" placeholder="密码" required />
+    <button type="submit"><span>登 陆</span></button>
+  </form>
+  <div class="footer">
+    &copy;  Commander
+  </div>
+</div>
+
+</body>
+</html>

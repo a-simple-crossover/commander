@@ -35,7 +35,7 @@ public class LoginController {
         return "test";
     }
 
-    @RequestMapping(value = "/login", method = {RequestMethod.POST, RequestMethod.GET})
+    @RequestMapping(value = "/loginOwner", method = {RequestMethod.POST, RequestMethod.GET})
     public boolean login(@RequestParam("username") String username,
                          @RequestParam("password") String password,
                          HttpServletRequest request,

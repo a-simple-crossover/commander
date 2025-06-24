@@ -2,6 +2,8 @@ package com.master.commander.oauth2.authorization.server.config;
 
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -26,29 +28,28 @@ import org.springframework.security.oauth2.server.authorization.client.InMemoryR
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
-import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
-import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.oauth2.server.authorization.web.OAuth2AuthorizationServerMetadataEndpointFilter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import java.util.UUID;
 
 /**
  * 默认请求地址配置
  *
+ * @author zhangbo
  * @see org.springframework.security.web.access.ExceptionTranslationFilter
  * @see org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings
- * <p>
+ *
  * 默认授权请求参数
  * @see org.springframework.security.web.context.SecurityContextHolderFilter
  * @see org.springframework.security.oauth2.server.authorization.web.OAuth2AuthorizationEndpointFilter
@@ -57,15 +58,17 @@ import java.util.UUID;
  * @see UsernamePasswordAuthenticationFilter
  * @see OAuth2AuthorizationServerMetadataEndpointFilter
  * @see org.springframework.security.oauth2.server.authorization.web.OAuth2TokenEndpointFilter
- *
- * @author zhangbo
  */
 @Configuration
 public class AuthorizationServerConfig {
 
+    @Bean
+    public AuthenticationSuccessHandler successHandler(){
+        return new SavedRequestAwareAuthenticationSuccessHandler();
+    }
 
     @Bean
-    @Order(2)
+    @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
@@ -75,12 +78,18 @@ public class AuthorizationServerConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().authenticated()
                 )
+                .formLogin(formLogin ->
+                        formLogin
+                                .loginPage("/loginPage")
+                                .loginProcessingUrl("/login")
+                                .successHandler(successHandler())
+                )
                 .with(authorizationServerConfigurer, (authorizationServer) ->
-                                authorizationServer
-                                        .registeredClientRepository(repository())
-                                        .authorizationService(authorizationService())
-                                        .authorizationConsentService(authorizationConsentService())
-                                        .tokenGenerator(tokenGenerator())
+                        authorizationServer
+                                .registeredClientRepository(repository())
+                                .authorizationService(authorizationService())
+                                .authorizationConsentService(authorizationConsentService())
+                                .tokenGenerator(tokenGenerator())
                 );
 
         return http.build();
@@ -92,9 +101,28 @@ public class AuthorizationServerConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login", "/logout/success", "/test").permitAll()
+                        .requestMatchers("/loginPage", "/logout/success", "/test").permitAll()
+                        .requestMatchers("/.well-known/appspecific/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .formLogin(formLogin ->
+                        formLogin
+                                .loginPage("/loginPage")
+                                .loginProcessingUrl("/login")
+                                .successHandler(successHandler())
+                )
+                .requestCache(requestCache -> requestCache.requestCache(new HttpSessionRequestCache() {
+                    private final String oauth2Path = "/oauth2/";
+
+                    @Override
+                    public void saveRequest(HttpServletRequest request, HttpServletResponse response) {
+                        String requestURI = request.getRequestURI();
+                        if (!requestURI.startsWith(oauth2Path)) {
+                            return;
+                        }
+                        super.saveRequest(request, response);
+                    }
+                }))
                 .securityContext(context -> context.securityContextRepository(securityContextRepository()))
                 .logout(logout -> logout.logoutSuccessUrl("/logout/success"));
         return http.build();
@@ -128,7 +156,6 @@ public class AuthorizationServerConfig {
     }
 
 
-
     private OAuth2AuthorizationConsentService authorizationConsentService() {
         return new InMemoryOAuth2AuthorizationConsentService();
     }
@@ -148,15 +175,14 @@ public class AuthorizationServerConfig {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .clientId("client1")
+                .clientId("default")
                 .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .redirectUri("http://localhost/find/code")
+                .redirectUri("http://192.168.6.8:8080/need")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(false)
                         .build())
-                .scope("read")
-                .scope("update")
+                .scope("admin")
                 .build();
         return new InMemoryRegisteredClientRepository(registeredClient);
     }
