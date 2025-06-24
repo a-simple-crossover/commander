@@ -112,11 +112,11 @@ public class AuthorizationServerConfig {
                                 .successHandler(successHandler())
                 )
                 .requestCache(requestCache -> requestCache.requestCache(new HttpSessionRequestCache() {
-                    private final String oauth2Path = "/oauth2/";
 
                     @Override
                     public void saveRequest(HttpServletRequest request, HttpServletResponse response) {
                         String requestURI = request.getRequestURI();
+                        String oauth2Path = "/oauth2/";
                         if (!requestURI.startsWith(oauth2Path)) {
                             return;
                         }
