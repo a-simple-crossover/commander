@@ -28,16 +28,13 @@ public class SecurityConfig {
                         .pathMatchers("/need").permitAll()
                         .anyExchange().authenticated()
                 )
-                .exceptionHandling(exceptionHandlingSpec -> {
-                    exceptionHandlingSpec
-                            .authenticationEntryPoint((exchange, ex) -> {
-                                ServerHttpResponse response = exchange.getResponse();
-                                response.setStatusCode(HttpStatus.SEE_OTHER);
-                                response.getHeaders().setLocation(URI.create("http://192.168.6.8/oauth2/authorize?client_id=default&response_type=code&redirect_uri=http://192.168.6.8:8080/need&scope=admin"));
-                                return response.setComplete();
-                            })
-                            ;
-                })
+                .exceptionHandling(exceptionHandlingSpec -> exceptionHandlingSpec
+                        .authenticationEntryPoint((exchange, ex) -> {
+                            ServerHttpResponse response = exchange.getResponse();
+                            response.setStatusCode(HttpStatus.SEE_OTHER);
+                            response.getHeaders().setLocation(URI.create("http://192.168.6.8/oauth2/authorize?client_id=default&response_type=code&redirect_uri=http://192.168.6.8:8080/need&scope=admin"));
+                            return response.setComplete();
+                        }))
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults())
                 )
